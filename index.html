@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Symbiotic Quiz Rush</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+  :root{
+    --bg1:#071918; --bg2:#032c1f; --accent:#40ffb7; --card:#0b1a14;
+    --muted:rgba(255,255,255,0.72); --danger:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background: linear-gradient(135deg,var(--bg1),var(--bg2));
+    color:#eafaf0; font-family:Inter,ui-sans-serif,system-ui,Arial; padding:20px;
+  }
+
+  .app{
+    width:100%; max-width:980px; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));
+    border-radius:12px; padding:18px; box-shadow:0 10px 40px rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.03);
+  }
+
+  header{display:flex; gap:12px; align-items:center}
+  .logo{width:56px;height:56px;border-radius:10px;background:linear-gradient(180deg,#053b28,#074b33);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--accent)}
+  h1{margin:0;font-size:1.2rem}
+  p.lead{margin:0;color:var(--muted);font-size:0.95rem}
+
+  .layout{display:grid; grid-template-columns: 1fr 320px; gap:18px; margin-top:16px}
+  @media (max-width:900px){ .layout{grid-template-columns:1fr} }
+
+  .card{background:var(--card); border-radius:10px; padding:14px; border:1px solid rgba(255,255,255,0.03)}
+  .quiz-box{min-height:420px; display:flex; flex-direction:column; gap:12px; justify-content:flex-start}
+
+  .meta{display:flex; gap:12px; align-items:center; justify-content:space-between}
+  .timer{font-weight:700;color:var(--accent); font-size:1.1rem}
+  .progress{height:8px;background:rgba(255,255,255,0.06);border-radius:999px;overflow:hidden; width:100%}
+  .progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#8bffcc); width:0%}
+
+  .question{font-size:1.05rem; font-weight:700; margin-top:6px}
+  .options{display:flex; flex-direction:column; gap:10px; margin-top:8px}
+  .option{background:rgba(255,255,255,0.03); padding:10px 12px; border-radius:8px; cursor:pointer; border:1px solid rgba(255,255,255,0.02); transition: all .15s; text-align:left}
+  .option:hover{transform:translateY(-3px)}
+  .option.correct{background:rgba(64,255,183,0.12); border-color:rgba(64,255,183,0.18)}
+  .option.wrong{background:rgba(255,80,80,0.08); border-color:rgba(255,80,80,0.15)}
+
+  .controls{display:flex; gap:8px; margin-top:auto; align-items:center}
+  button{background:var(--accent); color:#05221a; border:none; padding:10px 14px; border-radius:8px; cursor:pointer; font-weight:800}
+  button.ghost{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.04); font-weight:700}
+  .small{font-size:0.9rem; color:var(--muted)}
+
+  /* sidebar */
+  .sidebar{display:flex; flex-direction:column; gap:12px}
+  .stat{display:flex; justify-content:space-between; align-items:center}
+  .big{font-size:1.6rem; color:var(--accent); font-weight:900}
+  .hint{font-size:0.92rem;color:var(--muted)}
+  .result{font-size:1rem; font-weight:800; color:var(--accent)}
+
+  .share{display:flex; gap:8px; align-items:center}
+  input.shareinput{flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:#fff}
+
+  footer{margin-top:12px;color:var(--muted);font-size:0.9rem;text-align:center}
+</style>
+</head>
+<body>
+  <div class="app" role="application" aria-label="Symbiotic Quiz Rush">
+    <header>
+      <div class="logo">Gm</div>
+      <div>
+        <h1>Symbiotic Quiz Rush</h1>
+        <p class="lead">Fast-fire multiple choice quiz — test your knowledge of vaults, tokens, APY & risk. Finish before the timer!</p>
+      </div>
+    </header>
+
+    <div class="layout">
+      <main class="card quiz-box" id="quiz">
+        <div class="meta">
+          <div class="timer">Time: <span id="globalTime">45</span>s</div>
+          <div style="width:62%"><div class="progress" aria-hidden="true"><i id="globalProgress"></i></div></div>
+          <div class="small">Q <span id="qIndex">1</span>/10</div>
+        </div>
+
+        <div id="questionArea" role="region" aria-live="polite">
+          <div class="question" id="questionText">Loading question...</div>
+          <div class="options" id="options"></div>
+        </div>
+
+        <div class="controls">
+          <button id="nextBtn" class="ghost" disabled>Next</button>
+          <button id="startBtn">Start Quiz</button>
+          <div class="small" style="margin-left:auto">High score: <span id="highScore">0</span></div>
+        </div>
+      </main>
+
+      <aside class="sidebar">
+        <div class="card">
+          <div class="stat"><div class="small">Score</div><div class="big" id="score">0</div></div>
+          <div style="height:8px"></div>
+          <div class="stat"><div class="small">Correct</div><div id="correctCount">0</div></div>
+          <div class="stat"><div class="small">Wrong</div><div id="wrongCount">0</div></div>
+        </div>
+
+        <div class="card">
+          <div class="hint">Rank titles</div>
+          <ul style="margin:8px 0 0 14px;color:var(--muted);font-weight:700">
+            <li>0–29: Yield Apprentice</li>
+            <li>30–59: Vault Guardian</li>
+            <li>60–100: Symbiotic OG</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <div class="hint">Share result</div>
+          <div class="share">
+            <input id="shareInput" class="shareinput" readonly />
+            <button id="copyBtn" class="ghost">Copy</button>
+          </div>
+        </div>
+
+        <div class="card small">Tip: use keyboard (1–4) to answer quickly. Play to improve your high score — good for PC.</div>
+      </aside>
+    </div>
+
+    <footer>Gmbiotic 💚 — built for @symbioticfi</footer>
+  </div>
+
+<script>
+(() => {
+  // Questions (educational & generic Symbiotic-themed)
+  const QUESTIONS = [
+    {
+      q: "What is a 'vault' in Symbiotic-style simulators?",
+      options: [
+        "A smart contract that aggregates assets & strategies",
+        "A physical safe at a bank",
+        "A wallet software for storing private keys",
+        "A token exchange rate metric"
+      ],
+      a: 0
+    },
+    {
+      q: "Which token is typically used for staking in many DeFi vaults?",
+      options: ["ETH", "DOGE", "BTC", "LINK"],
+      a: 0
+    },
+    {
+      q: "APY stands for:",
+      options: ["Annual Percentage Yield", "Average Protocol Yield", "Asset Price Yield", "Automatic Pay Yield"],
+      a: 0
+    },
+    {
+      q: "Liquid staking (like stETH) lets you:",
+      options: ["Earn staking rewards while keeping a liquid token", "Lock tokens forever", "Convert tokens to stablecoins instantly", "Remove risk completely"],
+      a: 0
+    },
+    {
+      q: "Higher APY usually implies:",
+      options: ["Higher potential return and often higher risk", "Guaranteed profits", "Lower fees", "Faster transaction speeds"],
+      a: 0
+    },
+    {
+      q: "In a simulator with test funds, what is true?",
+      options: ["No real money is at risk", "You earn real fiat", "You can withdraw to your bank", "Tokens are traded on mainnet"],
+      a: 0
+    },
+    {
+      q: "Diversification across vaults helps to:",
+      options: ["Reduce risk by spreading exposures", "Stop all losses", "Double APY automatically", "Reduce number of transactions"],
+      a: 0
+    },
+    {
+      q: "A leaderboard in a game typically shows:",
+      options: ["Top player scores", "Server logs", "Smart contract code", "Real token balances"],
+      a: 0
+    },
+    {
+      q: "A 'fake token' in a learning game might represent:",
+      options: ["Unsafe or irrelevant assets you should avoid", "A high-value asset", "An official reward", "A gas fee refund"],
+      a: 0
+    },
+    {
+      q: "What's a good strategy for learning DeFi in a simulator?",
+      options: ["Experiment, read docs, and practice with test funds", "Invest all real funds immediately", "Ignore documentation", "Rely on random tips"],
+      a: 0
+    }
+  ];
+
+  // DOM
+  const startBtn = document.getElementById('startBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const questionText = document.getElementById('questionText');
+  const optionsEl = document.getElementById('options');
+  const qIndexEl = document.getElementById('qIndex');
+  const globalTimeEl = document.getElementById('globalTime');
+  const progressBar = document.getElementById('globalProgress');
+
+  const scoreEl = document.getElementById('score');
+  const correctEl = document.getElementById('correctCount');
+  const wrongEl = document.getElementById('wrongCount');
+  const highEl = document.getElementById('highScore');
+  const shareInput = document.getElementById('shareInput');
+  const copyBtn = document.getElementById('copyBtn');
+
+  // state
+  let currentIndex = 0;
+  let shuffled = [];
+  let running = false;
+  let totalTime = 45; // global seconds
+  let timerInterval = null;
+  let score = 0;
+  let correct = 0;
+  let wrong = 0;
+  const POINTS = 10;
+  const HS_KEY = 'sym-quiz-highscore';
+  let highScore = parseInt(localStorage.getItem(HS_KEY) || '0', 10);
+  highEl.textContent = highScore;
+
+  // per-question auto-lock to prevent double click
+  let lock = false;
+
+  function shuffleArray(arr) {
+    const copy = arr.slice();
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy;
+  }
+
+  // init and start
+  function startQuiz() {
+    shuffled = shuffleArray(QUESTIONS);
+    currentIndex = 0;
+    score = 0;
+    correct = 0;
+    wrong = 0;
+    totalTime = 45;
+    running = true;
+    lock = false;
+    scoreEl.textContent = score;
+    correctEl.textContent = correct;
+    wrongEl.textContent = wrong;
+    globalTimeEl.textContent = totalTime;
+    updateProgress();
+    startBtn.disabled = true;
+    nextBtn.disabled = true;
+    shareInput.value = '';
+    copyBtn.disabled = true;
+
+    renderQuestion();
+    timerInterval = setInterval(() => {
+      totalTime--;
+      globalTimeEl.textContent = totalTime;
+      updateProgress();
+      if (totalTime <= 0) endQuiz();
+    }, 1000);
+  }
+
+  function endQuiz() {
+    running = false;
+    clearInterval(timerInterval);
+    startBtn.disabled = false;
+    nextBtn.disabled = true;
+    // evaluate performance title
+    const percent = Math.round((score / (QUESTIONS.length * POINTS)) * 100);
+    let title = 'Yield Apprentice';
+    if (percent >= 60) title = 'Symbiotic OG';
+    else if (percent >= 30) title = 'Vault Guardian';
+
+    // high score
+    if (score > highScore) {
+      highScore = score;
+      localStorage.setItem(HS_KEY, highScore);
+      highEl.textContent = highScore;
+    }
+
+    // show share text
+    const shareText = `I scored ${score} on Symbiotic Quiz Rush — ${title}! Try it: ${location.origin + location.pathname}`;
+    shareInput.value = shareText;
+    copyBtn.disabled = false;
+
+    // show result visually in question area
+    questionText.innerText = `🎉 Quiz finished — ${title}!`;
+    optionsEl.innerHTML = `
+      <div style="margin-top:8px;color:var(--muted)">
+        Score: <strong>${score}</strong> • Correct: ${correct} • Wrong: ${wrong} • ${Math.round((score/(QUESTIONS.length*POINTS))*100)}%
+      </div>
+      <div style="margin-top:12px">
+        <button onclick="window.scrollTo(0,0);">Nice</button>
+      </div>
+    `;
+  }
+
+  // render current question
+  function renderQuestion() {
+    lock = false;
+    nextBtn.disabled = true;
+    const qObj = shuffled[currentIndex];
+    qIndexEl.textContent = (currentIndex + 1);
+    questionText.textContent = qObj.q;
+
+    // shuffle options with index mapping
+    const indexed = qObj.options.map((opt, idx) => ({opt, idx}));
+    const shuffledOpts = shuffleArray(indexed);
+    optionsEl.innerHTML = '';
+    shuffledOpts.forEach((o, i) => {
+      const btn = document.createElement('div');
+      btn.className = 'option';
+      btn.tabIndex = 0;
+      btn.setAttribute('role','button');
+      btn.setAttribute('data-idx', o.idx);
+      btn.innerText = `${String.fromCharCode(65 + i)}. ${o.opt}`;
+      btn.addEventListener('click', onAnswer);
+      btn.addEventListener('keydown', (e)=>{ if (e.key === 'Enter' || e.key === ' ') onAnswer.call(btn, e); });
+      optionsEl.appendChild(btn);
+    });
+  }
+
+  function onAnswer(e) {
+    if (lock || !running) return;
+    lock = true;
+    const selectedIdx = parseInt(this.getAttribute('data-idx'), 10);
+    const qObj = shuffled[currentIndex];
+    const optionNodes = Array.from(optionsEl.children);
+
+    // mark correct and wrong
+    optionNodes.forEach(node => {
+      const idx = parseInt(node.getAttribute('data-idx'), 10);
+      if (idx === qObj.a) node.classList.add('correct');
+      if (node === this && idx !== qObj.a) node.classList.add('wrong');
+    });
+
+    if (selectedIdx === qObj.a) {
+      score += POINTS;
+      correct++;
+    } else {
+      score -= Math.floor(POINTS/2);
+      if (score < 0) score = 0;
+      wrong++;
+    }
+    // update UI
+    scoreEl.textContent = score;
+    correctEl.textContent = correct;
+    wrongEl.textContent = wrong;
+
+    // enable next or finish
+    if (currentIndex < shuffled.length - 1) {
+      nextBtn.disabled = false;
+    } else {
+      // finish quiz
+      setTimeout(() => endQuiz(), 900);
+    }
+  }
+
+  function nextQuestion() {
+    if (!running) return;
+    currentIndex++;
+    renderQuestion();
+  }
+
+  function updateProgress() {
+    const pct = Math.max(0, Math.min(100, (totalTime / 45) * 100));
+    progressBar.style.width = pct + '%';
+  }
+
+  // keyboard shortcuts 1-4
+  window.addEventListener('keydown', (e) => {
+    if (!running) return;
+    const k = e.key;
+    if (['1','2','3','4'].includes(k)) {
+      const idx = parseInt(k,10) - 1;
+      const node = optionsEl.children[idx];
+      if (node) node.click();
+    } else if (k === 'ArrowRight' || k === ' ') {
+      if (!nextBtn.disabled) nextBtn.click();
+    }
+  });
+
+  // start / next button handlers
+  startBtn.addEventListener('click', startQuiz);
+  nextBtn.addEventListener('click', () => {
+    nextQuestion();
+  });
+
+  // copy share text
+  copyBtn.addEventListener('click', () => {
+    shareInput.select();
+    shareInput.setSelectionRange(0, 99999);
+    document.execCommand('copy');
+    copyBtn.textContent = 'Copied!';
+    setTimeout(()=> copyBtn.textContent = 'Copy', 1200);
+  });
+
+  // expose nextQuestion for inline button used in endQuiz block (tiny hack)
+  window.nextQuestion = nextQuestion;
+
+  // initial ready state (show first question but disabled until start)
+  shuffled = shuffleArray(QUESTIONS);
+  currentIndex = 0;
+  renderQuestion();
+})();
+</script>
+</body>
+</html>
