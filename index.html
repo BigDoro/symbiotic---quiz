@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Symbiotic Quiz Rush</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #0a3d2d, #000);
+      color: #fff;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #00ff88;
+    }
+
+    #quiz-container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: #111;
+      padding: 20px;
+      border-radius: 12px;
+      border: 2px solid #00ff88;
+      display: none;
+    }
+
+    .btn {
+      background: #00ff88;
+      color: #000;
+      padding: 10px 20px;
+      margin: 10px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: 0.3s;
+    }
+
+    .btn:hover {
+      background: #00cc66;
+    }
+
+    #result {
+      display: none;
+      margin-top: 20px;
+      font-size: 20px;
+    }
+
+    #answers-review {
+      margin-top: 20px;
+      text-align: left;
+    }
+
+    .correct {
+      color: #00ff88;
+    }
+
+    .wrong {
+      color: #ff5555;
+    }
+
+    #timer {
+      font-size: 18px;
+      margin: 10px;
+      color: #ffcc00;
+    }
+  </style>
+</head>
+<body>
+  <h1>💚 Symbiotic Quiz Rush 💚</h1>
+  <button id="start-btn" class="btn">Start Quiz</button>
+
+  <div id="quiz-container">
+    <h2 id="question"></h2>
+    <div id="options"></div>
+    <div id="timer"></div>
+  </div>
+
+  <div id="result"></div>
+  <div id="answers-review"></div>
+
+  <script>
+    const startBtn = document.getElementById("start-btn");
+    const quizContainer = document.getElementById("quiz-container");
+    const questionEl = document.getElementById("question");
+    const optionsEl = document.getElementById("options");
+    const resultEl = document.getElementById("result");
+    const reviewEl = document.getElementById("answers-review");
+    const timerEl = document.getElementById("timer");
+
+    const quizData = [
+      {
+        question: "What does Symbiotic mainly provide?",
+        options: ["Gaming NFTs", "DeFi security & vaults", "Social media apps"],
+        answer: "DeFi security & vaults"
+      },
+      {
+        question: "Which is a Symbiotic-friendly token?",
+        options: ["ETH", "Banana 🍌", "Gold Bar"],
+        answer: "ETH"
+      },
+      {
+        question: "What is the benefit of using Symbiotic?",
+        options: ["Higher yields & diversification", "Free Netflix", "Faster WiFi"],
+        answer: "Higher yields & diversification"
+      },
+      {
+        question: "Vaults in Symbiotic are used for?",
+        options: ["Liquidity & staking", "Cooking food", "Sharing memes"],
+        answer: "Liquidity & staking"
+      }
+    ];
+
+    let currentQuestion = 0;
+    let score = 0;
+    let userAnswers = [];
+    let timer;
+    let timeLeft = 10;
+
+    startBtn.addEventListener("click", startQuiz);
+
+    function startQuiz() {
+      startBtn.style.display = "none";
+      quizContainer.style.display = "block";
+      resultEl.style.display = "none";
+      reviewEl.innerHTML = "";
+      currentQuestion = 0;
+      score = 0;
+      userAnswers = [];
+      showQuestion();
+    }
+
+    function showQuestion() {
+      const q = quizData[currentQuestion];
+      questionEl.innerText = q.question;
+      optionsEl.innerHTML = "";
+      q.options.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.innerText = opt;
+        btn.classList.add("btn");
+        btn.addEventListener("click", () => selectAnswer(opt));
+        optionsEl.appendChild(btn);
+      });
+
+      // reset and start timer
+      timeLeft = 10;
+      timerEl.innerText = `⏳ Time left: ${timeLeft}s`;
+      clearInterval(timer);
+      timer = setInterval(() => {
+        timeLeft--;
+        timerEl.innerText = `⏳ Time left: ${timeLeft}s`;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          selectAnswer(null); // no answer selected
+        }
+      }, 1000);
+    }
+
+    function selectAnswer(selected) {
+      clearInterval(timer);
+      const correct = quizData[currentQuestion].answer;
+      if (selected === correct) score++;
+      userAnswers.push({ 
+        question: quizData[currentQuestion].question, 
+        selected: selected || "No answer", 
+        correct 
+      });
+
+      currentQuestion++;
+      if (currentQuestion < quizData.length) {
+        showQuestion();
+      } else {
+        endQuiz();
+      }
+    }
+
+    function endQuiz() {
+      quizContainer.style.display = "none";
+      resultEl.style.display = "block";
+      resultEl.innerText = `🎉 You scored ${score} out of ${quizData.length}!`;
+
+      reviewEl.innerHTML = "<h3>Review Answers:</h3>";
+      userAnswers.forEach((ans, i) => {
+        const div = document.createElement("div");
+        div.innerHTML = `
+          <p>Q${i+1}: ${ans.question}</p>
+          <p>Your answer: <span class="${ans.selected === ans.correct ? 'correct':'wrong'}">${ans.selected}</span></p>
+          <p>Correct answer: <span class="correct">${ans.correct}</span></p>
+          <hr>
+        `;
+        reviewEl.appendChild(div);
+      });
+
+      const restartBtn = document.createElement("button");
+      restartBtn.innerText = "Restart Quiz";
+      restartBtn.classList.add("btn");
+      restartBtn.addEventListener("click", startQuiz);
+      reviewEl.appendChild(restartBtn);
+    }
+  </script>
+</body>
+</html>
