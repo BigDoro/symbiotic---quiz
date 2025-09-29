@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Symbiotic Quiz Rush – 20 Questions</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #0a3d2d, #000);
+      color: #e0f7e9;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      color: #00ff88;
+      margin-bottom: 10px;
+    }
+    .container {
+      max-width: 700px;
+      margin: 40px auto;
+      background: #111;
+      padding: 20px;
+      border-radius: 12px;
+      border: 2px solid #00ff88;
+    }
+    button {
+      background: #00ff88;
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      margin: 8px;
+      cursor: pointer;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #28cc0f;
+    }
+    .hide {
+      display: none;
+    }
+    .answers {
+      margin-top: 20px;
+    }
+    .answers button {
+      display: block;
+      width: 100%;
+      margin: 8px 0;
+    }
+    .result {
+      margin-top: 20px;
+      font-size: 20px;
+    }
+    .correct {
+      color: #00ff88;
+    }
+    .wrong {
+      color: #ff5555;
+    }
+    #timer {
+      font-size: 18px;
+      margin: 10px;
+      color: #ffcc00;
+    }
+    hr {
+      border: 0.5px solid #444;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Symbiotic Quiz Rush 💚 – Ecosystem Edition</h1>
+    <p id="intro">Test your deeper knowledge of the Symbiotic ecosystem!</p>
+    <button id="startBtn">Start Quiz</button>
+    
+    <div id="quizBox" class="hide">
+      <h2 id="questionText"></h2>
+      <div class="answers" id="answersBox"></div>
+      <div id="timer"></div>
+    </div>
+
+    <div id="resultBox" class="hide">
+      <h2>Your Score: <span id="score"></span>/20</h2>
+      <div id="review"></div>
+      <button id="playAgainBtn">Play Again</button>
+    </div>
+  </div>
+
+  <script>
+    const startBtn = document.getElementById("startBtn");
+    const introP = document.getElementById("intro");
+    const quizBox = document.getElementById("quizBox");
+    const questionText = document.getElementById("questionText");
+    const answersBox = document.getElementById("answersBox");
+    const timerEl = document.getElementById("timer");
+    const resultBox = document.getElementById("resultBox");
+    const scoreText = document.getElementById("score");
+    const reviewBox = document.getElementById("review");
+    const playAgainBtn = document.getElementById("playAgainBtn");
+
+    const quizData = [
+      {
+        question: "Which token dominates Symbiotic vault collateral with ~64% share?",
+        options: ["wstETH", "cbETH", "stETH", "ETH"],
+        answer: "wstETH"
+      },
+      {
+        question: "What is the name of vaults that cannot be reconfigured after deployment?",
+        options: ["Immutable Pre-Configured Vaults", "Tokenized Vaults", "Curated Vaults", "Operator Vaults"],
+        answer: "Immutable Pre-Configured Vaults"
+      },
+      {
+        question: "Symbiotic’s tokenized vaults represent stake shares as ___ tokens.",
+        options: ["ERC-20", "NFT", "LP tokens", "ERC-721"],
+        answer: "ERC-20"
+      },
+      {
+        question: "What is the FullRestakeDelegator responsible for?",
+        options: ["Enforcing allocations across networks and operator pairs", "Only delegating in one network", "Managing user wallets", "Handling swaps"],
+        answer: "Enforcing allocations across networks and operator pairs"
+      },
+      {
+        question: "Which early partner was in Symbiotic’s Partner Cohort 1?",
+        options: ["Frax", "Uniswap", "Chainlink", "Aave"],
+        answer: "Frax"
+      },
+      {
+        question: "Approximately how much TVL did Symbiotic report across mainnet assets in 2024?",
+        options: ["$2.3B", "$500M", "$5B", "$1B"],
+        answer: "$2.3B"
+      },
+      {
+        question: "Symbiotic’s vaults use a Slasher module to manage ____.",
+        options: ["Penalties / slashing events", "Liquidity pool rewards", "Token issuance", "Governance votes"],
+        answer: "Penalties / slashing events"
+      },
+      {
+        question: "Which asset may be supported as liquid staking collateral in Symbiotic’s curated vaults?",
+        options: ["wstETH", "rETH", "swETH", "All of the above"],
+        answer: "All of the above"
+      },
+      {
+        question: "What is the minimum required APY in a typical vault scenario?",
+        options: ["0%", "Positive yield", "-5%", "Fixed 3%"],
+        answer: "Positive yield"
+      },
+      {
+        question: "Which of these is NOT typically handled by Symbiotic vault logic?",
+        options: ["NFT minting", "Reward distribution", "Accounting deposits/withdrawals", "Strategy rebalancing"],
+        answer: "NFT minting"
+      },
+      {
+        question: "What does “Curated Vault” refer to in Symbiotic?",
+        options: ["Vaults configured by protocol governance", "Any random vault", "User vault", "Oracle-only vault"],
+        answer: "Vaults configured by protocol governance"
+      },
+      {
+        question: "What is the main purpose of a Delegator in Symbiotic?",
+        options: ["Manage stake allocations", "Mint new tokens", "Provide liquidity", "Create NFTs"],
+        answer: "Manage stake allocations"
+      },
+      {
+        question: "Which role ensures vaults meet protocol constraints in multiple networks?",
+        options: ["NetworkRestakeDelegator", "FullRestakeDelegator", "OperatorVault", "Governance module"],
+        answer: "FullRestakeDelegator"
+      },
+      {
+        question: "Which performance metric is affected by slashing events in vaults?",
+        options: ["Effective yield", "Gas fee", "User interface speed", "Logo color"],
+        answer: "Effective yield"
+      },
+      {
+        question: "What is one advantage of tokenized vaults over classic vaults?",
+        options: ["Tradable shares", "Immutable code only", "No strategy", "Manual withdrawals only"],
+        answer: "Tradable shares"
+      },
+      {
+        question: "Which configuration is more rigid in vault deployment?",
+        options: ["Immutable Pre-Configured", "Upgradeable vaults", "User vaults", "Test vaults"],
+        answer: "Immutable Pre-Configured"
+      },
+      {
+        question: "What kind of risks do vault users need to be aware of?",
+        options: ["Slashing risk", "Smart contract risk", "Strategy risk", "All of the above"],
+        answer: "All of the above"
+      },
+      {
+        question: "Symbiotic’s approach to restaking involves combining security from multiple chains via ___ .",
+        options: ["Cross-chain restaking", "Single-chain staking", "NFT staking", "DEX routing"],
+        answer: "Cross-chain restaking"
+      },
+      {
+        question: "Vaults, delegators, and slasher are part of the ___ modules in Symbiotic.",
+        options: ["Core protocol modules", "Marketing tools", "Frontend layer", "Wallet plugins"],
+        answer: "Core protocol modules"
+      }
+    ];
+
+    let currentQuestion = 0;
+    let score = 0;
+    let userAnswers = [];
+    let timer;
+    let timeLeft = 10;
+
+    startBtn.addEventListener("click", startQuiz);
+
+    playAgainBtn.addEventListener("click", () => {
+      resultBox.classList.add("hide");
+      startBtn.style.display = "inline-block";
+      introP.classList.remove("hide");
+    });
+
+    function startQuiz() {
+      startBtn.style.display = "none";
+      introP.classList.add("hide");
+      quizBox.classList.remove("hide");
+      resultBox.classList.add("hide");
+      currentQuestion = 0;
+      score = 0;
+      userAnswers = [];
+      showQuestion();
+    }
+
+    function showQuestion() {
+      const q = quizData[currentQuestion];
+      questionText.innerText = q.question;
+      answersBox.innerHTML = "";
+      q.options.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.innerText = opt;
+        btn.classList.add("btn");
+        btn.addEventListener("click", () => selectAnswer(opt));
+        answersBox.appendChild(btn);
+      });
+      timeLeft = 10;
+      timerEl.innerText = `⏳ Time left: ${timeLeft}s`;
+      clearInterval(timer);
+      timer = setInterval(() => {
+        timeLeft--;
+        timerEl.innerText = `⏳ Time left: ${timeLeft}s`;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          selectAnswer(null);
+        }
+      }, 1000);
+    }
+
+    function selectAnswer(selected) {
+      clearInterval(timer);
+      const correct = quizData[currentQuestion].answer;
+      if (selected === correct) {
+        score++;
+      }
+      userAnswers.push({
+        question: quizData[currentQuestion].question,
+        selected: selected || "No answer",
+        correct: correct
+      });
+      currentQuestion++;
+      if (currentQuestion < quizData.length) {
+        showQuestion();
+      } else {
+        endQuiz();
+      }
+    }
+
+    function endQuiz() {
+      quizBox.classList.add("hide");
+      resultBox.classList.remove("hide");
+      scoreText.innerText = score;
+
+      reviewBox.innerHTML = "<h3>Answers Review:</h3>";
+      userAnswers.forEach((ans, i) => {
+        reviewBox.innerHTML += `
+          <p>Q${i+1}: ${ans.question}</p>
+          <p>Your answer: <span class="${ans.selected === ans.correct ? 'correct' : 'wrong'}">${ans.selected}</span></p>
+          <p>Correct: <span class="correct">${ans.correct}</span></p>
+          <hr>
+        `;
+      });
+
+      playAgainBtn.onclick = () => {
+        location.reload();
+      };
+    }
+  </script>
+</body>
+</html>
